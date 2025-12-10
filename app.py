@@ -1,6 +1,7 @@
 import streamlit as st
 from mido import MidiFile, MidiTrack, MetaMessage
 from collections import defaultdict
+from io import BytesIO
 import os
 import tempfile
 
@@ -344,7 +345,7 @@ def processar_midi_bateria(arquivo: str, drumkit_name: str) -> str:
     for msg in drumkit_track:
         acc_time += msg.time
         if msg.type in ('note_on', 'note_off') and msg.note in NOTAS_BASSDRUM:
-            copied = msg.copy(time=acc_time)   # <---- AQUI CORRIGIDO
+            copied = msg.copy(time=acc_time)
             copied.channel = 9
             bassdrum_track.append(copied)
             acc_time = 0
@@ -354,7 +355,6 @@ def processar_midi_bateria(arquivo: str, drumkit_name: str) -> str:
     else:
         mid.tracks.append(bassdrum_track)
         bassdrum_index = len(mid.tracks) - 1
-
 
     # Cymbal
     cymbal_index = None
@@ -458,6 +458,33 @@ def main():
         type=["mid", "midi"]
     )
 
+    # Se o usuário já enviou um arquivo, mostramos as tracks encontradas
+    if uploaded_file is not None:
+        try:
+            mid_preview = MidiFile(file=BytesIO(uploaded_file.getvalue()))
+            track_names = []
+            for i, track in enumerate(mid_preview.tracks):
+                nome = None
+                for msg in track:
+                    if msg.is_meta and msg.type == 'track_name':
+                        nome = msg.name
+                        break
+                if nome is None:
+                    nome = f"Track {i}"
+                track_names.append(nome)
+
+            st.subheader("Tracks found in the file:")
+
+            html = "<div style='max-height: 250px; overflow-y: auto; padding-left: 8px;'>"
+            for i, nome in enumerate(track_names):
+                html += f"{i:02d}: {nome}<br>"
+            html += "</div>"
+
+            st.markdown(html, unsafe_allow_html=True)
+            st.info("Use exactly one of these names in the Drum track field below.")
+        except Exception as e:
+            st.error(f"The MIDI tracks could not be read.: {e}")
+
     drumkit_name = st.text_input(
         "Drum track name",
         placeholder="Ex: Drumkit"
@@ -494,7 +521,6 @@ def main():
                 ext_original = ".mid"
             saida_nome = f"{base_original} (MOD){ext_original}"
 
-            # Mensagem na tela usa apenas o nome "bonito"
             st.success(f"Generated file: {saida_nome}")
 
             st.download_button(
@@ -509,5 +535,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
