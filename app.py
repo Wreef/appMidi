@@ -4,7 +4,7 @@ from collections import defaultdict
 import os
 import tempfile
 
-# ---------- SUAS FUNÇÕES (copiadas aqui) ----------
+# ---------- SUAS FUNÇÕES ----------
 
 def remover_acordes_priorizar_maior(track: MidiTrack) -> MidiTrack:
     abs_time = 0
@@ -509,3 +509,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
